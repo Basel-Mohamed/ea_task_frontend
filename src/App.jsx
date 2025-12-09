@@ -25,7 +25,7 @@ const ChurnChatbot = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "👋 Hello! I'm your Telco Customer Churn Assistant. I can help you predict if a customer is likely to churn. Just tell me about the customer in your own words, or provide their details!"
+      content: "👋 Hello! I'm your e& Egypt Customer Churn Assistant. I can help you predict if a customer is likely to churn. Just tell me about the customer in your own words, or provide their details!"
     }
   ]);
   const [input, setInput] = useState('');
@@ -52,7 +52,7 @@ const ChurnChatbot = () => {
 
     try {
       // Call backend chatbot endpoint
-      const response = await fetch('https://ea-task.onrender.com/chat', {
+      const response = await fetch('https://eatask-production.up.railway.app//chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ const ChurnChatbot = () => {
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">Churn Prediction Assistant</h1>
+              <h1 className="text-xl font-bold text-gray-800">e& Egypt Churn Prediction Assistant</h1>
               <p className="text-sm text-gray-500">Powered by Groq AI</p>
             </div>
           </div>
