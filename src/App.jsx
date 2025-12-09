@@ -1,6 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, AlertCircle } from 'lucide-react';
 
+// Helper function to format markdown-style text
+const formatMessage = (text) => {
+  // Convert **bold** to <strong>
+  let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert emoji + text patterns for better styling
+  formatted = formatted.replace(/🎯 \*\*Prediction:\*\*/g, '<div class="mt-2"><span class="font-bold text-blue-600">🎯 Prediction:</span>');
+  formatted = formatted.replace(/📈 \*\*Churn Probability:\*\*/g, '<div class="mt-1"><span class="font-bold text-purple-600">📈 Churn Probability:</span>');
+  formatted = formatted.replace(/⚠️ \*\*Risk Level:\*\*/g, '<div class="mt-1"><span class="font-bold text-orange-600">⚠️ Risk Level:</span>');
+  formatted = formatted.replace(/🔴 \*\*Alert:\*\*/g, '<div class="mt-3 p-3 bg-red-50 rounded-lg"><span class="font-bold text-red-600">🔴 Alert:</span>');
+  formatted = formatted.replace(/🟡 \*\*Caution:\*\*/g, '<div class="mt-3 p-3 bg-yellow-50 rounded-lg"><span class="font-bold text-yellow-600">🟡 Caution:</span>');
+  formatted = formatted.replace(/🟢 \*\*Good News:\*\*/g, '<div class="mt-3 p-3 bg-green-50 rounded-lg"><span class="font-bold text-green-600">🟢 Good News:</span>');
+  formatted = formatted.replace(/💡 \*\*Recommendations:\*\*/g, '</div><div class="mt-3"><span class="font-bold text-indigo-600">💡 Recommendations:</span>');
+  
+  // Convert line breaks
+  formatted = formatted.replace(/\n/g, '<br/>');
+  
+  return formatted;
+};
+
 const ChurnChatbot = () => {
   const [messages, setMessages] = useState([
     {
@@ -53,7 +73,7 @@ const ChurnChatbot = () => {
           content: `❌ Error: ${data.message}` 
         }]);
       }
-    } catch {
+    } catch (error) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: '❌ Sorry, I encountered an error. Please make sure the backend is running and try again.' 
@@ -108,7 +128,10 @@ const ChurnChatbot = () => {
                     : 'bg-white text-gray-800 shadow-sm'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                <div 
+                  className="text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
+                />
               </div>
 
               {message.role === 'user' && (
