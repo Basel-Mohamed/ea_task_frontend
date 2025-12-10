@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, AlertCircle, Copy, Check, Lightbulb, X } from 'lucide-react';
 
 // Helper function to format markdown-style text
 const formatMessage = (text) => {
@@ -30,7 +30,54 @@ const ChurnChatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [showExamples, setShowExamples] = useState(true);
   const messagesEndRef = useRef(null);
+
+  // Example customer data with hints for display
+  const exampleCustomerWithHints = `customerID: 7590-VHVEG (any unique ID)
+gender: Female (Male/Female)
+Senior_Citizen: 0 (0=No, 1=Yes)
+Is_Married: Yes (Yes/No)
+Dependents: No (Yes/No)
+tenure: 12 (months with company)
+Phone_Service: No (Yes/No)
+Dual: No (Yes/No - multiple lines)
+Internet_Service: Fiber optic (DSL/Fiber optic/No)
+Online_Security: No (Yes/No/No internet service)
+Online_Backup: No (Yes/No/No internet service)
+Device_Protection: No (Yes/No/No internet service)
+Tech_Support: No (Yes/No/No internet service)
+Streaming_TV: Yes (Yes/No/No internet service)
+Streaming_Movies: Yes (Yes/No/No internet service)
+Contract: Month-to-month (Month-to-month/One year/Two year)
+Paperless_Billing: Yes (Yes/No)
+Payment_Method: Electronic check (Electronic check/Mailed check/Bank transfer (automatic)/Credit card (automatic))
+Monthly_Charges: 70.35 (amount in $)
+Total_Charges: 844.2 (amount in $)`;
+
+  // Example without hints for copying
+  const exampleCustomerClean = `customerID: 7590-VHVEG
+gender: Female
+Senior_Citizen: 0
+Is_Married: Yes
+Dependents: No
+tenure: 12
+Phone_Service: No
+Dual: No
+Internet_Service: Fiber optic
+Online_Security: No
+Online_Backup: No
+Device_Protection: No
+Tech_Support: No
+Streaming_TV: Yes
+Streaming_Movies: Yes
+Contract: Month-to-month
+Paperless_Billing: Yes
+Payment_Method: Electronic check
+Monthly_Charges: 70.35
+Total_Charges: 844.2`;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,6 +86,21 @@ const ChurnChatbot = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(exampleCustomerClean);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleUseExample = () => {
+    setInput(exampleCustomerClean);
+    setShowExamples(false);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -57,12 +119,20 @@ const ChurnChatbot = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ 
+          message: userMessage,
+          session_id: sessionId 
+        }),
       });
 
       const data = await response.json();
 
       if (data.status === 'success') {
+        // Store session ID for conversation continuity
+        if (data.session_id && !sessionId) {
+          setSessionId(data.session_id);
+        }
+        
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: data.response 
@@ -110,6 +180,84 @@ const ChurnChatbot = () => {
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-4">
+          
+          {/* Example Input Section - Show at top when showExamples is true */}
+          {showExamples && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 mb-6 shadow-md animate-in">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-yellow-500" />
+                    Try This Example Customer
+                  </h3>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Copy or use this example to see how the prediction works:
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowExamples(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 border border-gray-200 font-mono text-sm text-gray-700 mb-3 max-h-80 overflow-y-auto shadow-inner">
+                <div className="whitespace-pre-line leading-relaxed">
+                  {exampleCustomerWithHints.split('\n').map((line, idx) => {
+                    const [field, rest] = line.split(': ');
+                    const valueMatch = rest?.match(/^(.+?)(\s*\(.*\))?$/);
+                    const value = valueMatch?.[1] || rest;
+                    const hint = valueMatch?.[2] || '';
+                    
+                    return (
+                      <div key={idx} className="py-0.5">
+                        <span className="text-blue-600 font-semibold">{field}</span>
+                        {rest && (
+                          <>
+                            <span className="text-gray-400">: </span>
+                            <span className="text-gray-800">{value}</span>
+                            {hint && (
+                              <span className="text-gray-400 text-xs ml-1">{hint}</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium shadow-sm"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span className="text-green-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-gray-600" />
+                      <span className="text-gray-700">Copy</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleUseExample}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all text-sm font-medium shadow-md hover:shadow-lg"
+                >
+                  <Send className="w-4 h-4" />
+                  Use This Example
+                </button>
+              </div>
+            </div>
+          )}
+          
           {messages.map((message, index) => (
             <div
               key={index}
@@ -188,9 +336,22 @@ const ChurnChatbot = () => {
             </button>
           </div>
           
-          <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-            <AlertCircle className="w-4 h-4" />
-            <p>Example: "A female customer, 45 years old, has been with us for 12 months, uses fiber optic internet..."</p>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <AlertCircle className="w-4 h-4" />
+              <p>Example: "A female customer, 45 years old, has been with us for 12 months..." or use the example above</p>
+            </div>
+            
+            {!showExamples && (
+              <button
+                onClick={() => setShowExamples(true)}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors shadow-sm"
+                title="Show example customer data"
+              >
+                <Lightbulb className="w-4 h-4" />
+                Show Example
+              </button>
+            )}
           </div>
         </div>
       </div>
